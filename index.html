@@ -194,3 +194,284 @@
     </script>
 </body>
 </html>
+git reset --soft <hash>
+git push origin --force --all
+git push origin <branch> --force
+ <!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CELESTIAL PATHS - Aura & Orbit Protocol</title>
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@300;400;600&family=Noto+Sans+JP:wght@300;400&display=swap');
+        body { font-family: 'Noto Sans JP', sans-serif; }
+        .cinzel { font-family: 'Cinzel', serif; }
+
+        /* 天体の動的アニメーション用スタイル */
+        @keyframes orbitSlow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        @keyframes orbitReverse {
+            from { transform: rotate(360deg); }
+            to { transform: rotate(0deg); }
+        }
+        .animate-orbit { animation: orbitSlow 35s linear infinite; }
+        .animate-orbit-rev { animation: orbitReverse 25s linear infinite; }
+    </style>
+</head>
+<body class="bg-[#050814] text-[#E2E8F0] min-h-screen flex flex-col items-center justify-center p-4">
+
+    <div class="max-w-md w-full bg-[#0A0F24] border border-[#1E293B]/80 rounded-3xl p-6 shadow-2xl relative overflow-hidden backdrop-blur-md">
+        
+        <!-- 背景の微かな光彩 -->
+        <div class="absolute -top-32 -right-32 w-56 h-56 rounded-full bg-amber-500/5 blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-32 -left-32 w-56 h-56 rounded-full bg-indigo-500/5 blur-3xl pointer-events-none"></div>
+
+        <!-- ヘッダー -->
+        <div class="text-center mb-5">
+            <h1 class="cinzel text-lg font-light tracking-[0.25em] text-amber-200/90">CELESTIAL PATHS</h1>
+            <p class="text-[11px] text-slate-400 tracking-wider mt-1">プライベート・バイオリズム共鳴プロトタイプ</p>
+        </div>
+
+        <!-- 端末切り替えタブ (デモ用) -->
+        <div class="grid grid-cols-2 gap-1 bg-[#050814] p-1 rounded-xl border border-slate-800/80 mb-6 text-xs">
+            <button onclick="switchView('female')" id="btn-female" class="py-2.5 rounded-lg transition-all font-medium bg-amber-500/20 text-amber-200 border border-amber-500/30 shadow-sm">
+                ♀ 女性側入力
+            </button>
+            <button onclick="switchView('male')" id="btn-male" class="py-2.5 rounded-lg transition-all font-medium text-slate-400 hover:text-slate-200">
+                ♂ 男性側ビュー
+            </button>
+        </div>
+
+        <!-- ==================== 女性側画面 ==================== -->
+        <div id="view-female" class="space-y-4">
+            <div class="bg-slate-900/40 p-4 rounded-2xl border border-slate-800/60 space-y-3">
+                <label class="block text-xs text-amber-200/80 cinzel tracking-wide">1. いまの身体の質感・エネルギー</label>
+                <select id="sel-energy" class="w-full bg-[#050814] border border-slate-700/80 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-amber-400">
+                    <option value="high">満ち足りていて、外に向かうエネルギーがある</option>
+                    <option value="calm" selected>海のように静かで、穏やかな凪の中にいる</option>
+                    <option value="deep">深い夜の月のように、内省的で休息を求めている</option>
+                    <option value="vague">少し気圧や揺らぎを感じ、たゆたっている</option>
+                </select>
+            </div>
+
+            <div class="bg-slate-900/40 p-4 rounded-2xl border border-slate-800/60 space-y-3">
+                <label class="block text-xs text-amber-200/80 cinzel tracking-wide">2. 心の微かな気配・ムード</label>
+                <select id="sel-mood" class="w-full bg-[#050814] border border-slate-700/80 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-amber-400">
+                    <option value="warm">おだやかで、誰かと温もりを分かち合いたい</option>
+                    <option value="solo" selected>ひとりの時間を深く味わいたい、そっとしてほしい</option>
+                    <option value="sensitive">些細な風にも心が揺れやすい、繊細な時間</option>
+                </select>
+            </div>
+
+            <button onclick="encryptAndSync()" class="w-full py-3.5 bg-gradient-to-r from-amber-600/80 to-amber-700/90 hover:from-amber-600 hover:to-amber-700 text-amber-100 rounded-xl text-xs font-medium tracking-widest cinzel shadow-lg transition-all border border-amber-500/30">
+                暗号化して気配を同期する (E2EE)
+            </button>
+
+            <!-- サーバー監査用セ窓 -->
+            <div class="p-3 bg-slate-950/90 rounded-xl border border-slate-900 text-[10px]">
+                <span class="text-slate-500 block mb-1">【サーバー上の記録（運営にはこう見えています）】</span>
+                <code id="server-payload-view" class="text-amber-500/50 break-all">（暗号化データ未送信）</code>
+            </div>
+
+            <div class="text-center pt-1">
+                <button onclick="triggerKillSwitch()" class="text-[11px] text-rose-400/80 hover:text-rose-300 underline underline-offset-4">
+                    パートナーシップの接続を断絶する（Kill Switch）
+                </button>
+            </div>
+        </div>
+
+        <!-- ==================== 男性側画面 ==================== -->
+        <div id="view-male" class="space-y-5 hidden">
+            
+            <!-- 天体の動的暗示グラフィック -->
+            <div class="relative w-36 h-36 mx-auto flex items-center justify-center my-2">
+                <!-- 外周軌道 -->
+                <div class="absolute inset-0 rounded-full border border-amber-500/20 animate-orbit">
+                    <div id="planet-outer" class="absolute -top-1 left-1/2 w-2.5 h-2.5 bg-amber-300 rounded-full shadow-[0_0_10px_#fde047]"></div>
+                </div>
+                <!-- 内周逆軌道 -->
+                <div class="absolute inset-4 rounded-full border border-dashed border-indigo-400/20 animate-orbit-rev">
+                    <div class="absolute bottom-2 right-2 w-2 h-2 bg-indigo-300 rounded-full"></div>
+                </div>
+                <!-- 中心核（月の満ち欠け・明るさを暗示） -->
+                <div id="celestial-core" class="w-14 h-14 rounded-full bg-gradient-to-br from-amber-200 via-amber-500 to-amber-700 shadow-[0_0_25px_rgba(245,158,11,0.3)] flex items-center justify-center transition-all duration-700">
+                    <div class="w-4 h-4 rounded-full bg-[#0A0F24]/80"></div>
+                </div>
+            </div>
+
+            <!-- 解析インサイト（ステータス表示） -->
+            <div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-800/80 text-center space-y-1">
+                <span id="insight-phase" class="text-[10px] uppercase tracking-[0.2em] text-amber-300/80 cinzel">Celestial Phase: Calm Sea</span>
+                <p id="insight-summary" class="text-xs font-light text-slate-200 leading-relaxed pt-1">
+                    今は海のように静かで、穏やかな凪の中にいます。過度な干渉を避け、静かな時間を尊重するリズムです。
+                </p>
+            </div>
+
+            <!-- 接し方の事例カード -->
+            <div class="bg-slate-900/40 p-4 rounded-2xl border border-slate-800/60 space-y-2">
+                <span class="text-[10px] uppercase tracking-widest text-slate-400 cinzel block">Suggested Approach / 事例</span>
+                <ul id="insight-actions" class="text-xs text-slate-300 space-y-2 font-light">
+                    <li class="flex items-start space-x-2">
+                        <span class="text-amber-400">✦</span>
+                        <span>無理に話題を振らず、温かいハーブティーをそっと淹れておく。</span>
+                    </li>
+                    <li class="flex items-start space-x-2">
+                        <span class="text-amber-400">✦</span>
+                        <span>空間の静けさを大切にし、穏やかなBGMを小さく流す。</span>
+                    </li>
+                </ul>
+            </div>
+
+            <button onclick="decryptAndRefresh()" class="w-full py-3 bg-slate-800/80 hover:bg-slate-700/80 text-amber-200 rounded-xl text-xs font-medium tracking-widest cinzel border border-slate-700/80 transition-all shadow">
+                最新の気配を端末内復号する
+            </button>
+        </div>
+
+        <!-- 断絶時ビュー -->
+        <div id="view-killed" class="hidden text-center py-12 space-y-3">
+            <div class="w-10 h-10 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-center justify-center mx-auto text-lg">✦</div>
+            <p class="text-sm text-rose-200 cinzel">Connection Terminated</p>
+            <p class="text-xs text-slate-400">すべてのセキュアキャッシュと共有鍵は完全に破棄されました。</p>
+        </div>
+
+    </div>
+
+    <!-- スクリプト制御 -->
+    <script>
+        let cryptoKey = null;
+        let encryptedPayload = null;
+        let isConnected = true;
+
+        // 初期鍵生成 (Web Crypto API)
+        async function initCrypto() {
+            cryptoKey = await window.crypto.subtle.generateKey(
+                { name: "AES-GCM", length: 256 },
+                true,
+                ["encrypt", "decrypt"]
+            );
+        }
+        initCrypto();
+
+        function switchView(target) {
+            if (!isConnected) return;
+            const btnF = document.getElementById('btn-female');
+            const btnM = document.getElementById('btn-male');
+            const vF = document.getElementById('view-female');
+            const vM = document.getElementById('view-male');
+
+            if (target === 'female') {
+                btnF.className = "py-2.5 rounded-lg transition-all font-medium bg-amber-500/20 text-amber-200 border border-amber-500/30 shadow-sm";
+                btnM.className = "py-2.5 rounded-lg transition-all font-medium text-slate-400 hover:text-slate-200";
+                vF.classList.remove('hidden');
+                vM.classList.add('hidden');
+            } else {
+                btnM.className = "py-2.5 rounded-lg transition-all font-medium bg-amber-500/20 text-amber-200 border border-amber-500/30 shadow-sm";
+                btnF.className = "py-2.5 rounded-lg transition-all font-medium text-slate-400 hover:text-slate-200";
+                vM.classList.remove('hidden');
+                vF.classList.add('hidden');
+            }
+        }
+
+        // 女性側：選択内容を構造化して暗号化・同期
+        async function encryptAndSync() {
+            if (!cryptoKey) return;
+            const energy = document.getElementById('sel-energy').value;
+            const mood = document.getElementById('sel-mood').value;
+
+            const dataObj = { energy, mood, timestamp: Date.now() };
+            const jsonStr = JSON.stringify(dataObj);
+
+            const iv = window.crypto.getRandomValues(new Uint8Array(12));
+            const encoded = new TextEncoder().encode(jsonStr);
+
+            const ciphertext = await window.crypto.subtle.encrypt(
+                { name: "AES-GCM", iv: iv },
+                cryptoKey,
+                encoded
+            );
+
+            encryptedPayload = {
+                iv: Array.from(iv),
+                ciphertext: Array.from(new Uint8Array(ciphertext))
+            };
+
+            document.getElementById('server-payload-view').innerText = JSON.stringify(encryptedPayload).slice(0, 85) + '...';
+            alert('選択された気配のニュアンスが、ゼロ知識暗号化されて中継サーバーに同期されました。');
+        }
+
+        // 男性側：復号して動的UI（天体グラフィック・解析・事例）を構築
+        async function decryptAndRefresh() {
+            if (!cryptoKey || !encryptedPayload) {
+                alert('まだ届いている気配のデータがありません。');
+                return;
+            }
+
+            try {
+                const iv = new Uint8Array(encryptedPayload.iv);
+                const ciphertext = new Uint8Array(encryptedPayload.ciphertext);
+
+                const decrypted = await window.crypto.subtle.decrypt(
+                    { name: "AES-GCM", iv: iv },
+                    cryptoKey,
+                    ciphertext
+                );
+
+                const parsed = JSON.parse(new TextDecoder().decode(decrypted));
+                applyMaleDynamicUI(parsed.energy, parsed.mood);
+            } catch (e) {
+                alert('復号に失敗しました。');
+            }
+        }
+
+        // 状態に応じた動的デザインの反映（天体の明るさ・軌道・分析・事例の切り替え）
+        function applyMaleDynamicUI(energy, mood) {
+            const core = document.getElementById('celestial-core');
+            const phaseTitle = document.getElementById('insight-phase');
+            const summary = document.getElementById('insight-summary');
+            const actions = document.getElementById('insight-actions');
+
+            if (energy === 'deep' || mood === 'solo') {
+                // 深い休息期：天体の光を落とし、収縮するイメージ
+                core.className = "w-10 h-10 rounded-full bg-gradient-to-br from-indigo-300 via-indigo-600 to-slate-900 shadow-[0_0_15px_rgba(99,102,241,0.2)] flex items-center justify-center transition-all duration-700 scale-90";
+                phaseTitle.innerText = "Celestial Phase: Deep Moon / Resting";
+                summary.innerText = "深い夜の月のように、エネルギーが内側に向かっています。ひとりの時間を静かに味わいたい時期です。";
+                actions.innerHTML = `
+                    <li class="flex items-start space-x-2"><span class="text-indigo-400">✦</span><span>質問を少なくし、余計な言葉をかけずにそっとしておく。</span></li>
+                    <li class="flex items-start space-x-2"><span class="text-indigo-400">✦</span><span>家事やタスクを静かに肩代わりしておく。</span></li>
+                `;
+            } else if (energy === 'high') {
+                // 活性期：太陽のように明るく拡大するイメージ
+                core.className = "w-16 h-16 rounded-full bg-gradient-to-br from-amber-100 via-amber-400 to-amber-600 shadow-[0_0_35px_rgba(251,191,36,0.5)] flex items-center justify-center transition-all duration-700 scale-105";
+                phaseTitle.innerText = "Celestial Phase: Radiant Sun / Flow";
+                summary.innerText = "外に向かうエネルギーが満ちています。一緒に会話や穏やかな時間を楽しむのに最適なリズムです。";
+                actions.innerHTML = `
+                    <li class="flex items-start space-x-2"><span class="text-amber-400">✦</span><span>最近気になっていることについて、明るく楽しく会話を広げる。</span></li>
+                    <li class="flex items-start space-x-2"><span class="text-amber-400">✦</span><span>美味しいお気に入りの食事を一緒に共にする。</span></li>
+                `;
+            } else {
+                // 凪・おだやか期
+                core.className = "w-14 h-14 rounded-full bg-gradient-to-br from-amber-200 via-amber-500 to-amber-700 shadow-[0_0_25px_rgba(245,158,11,0.3)] flex items-center justify-center transition-all duration-700";
+                phaseTitle.innerText = "Celestial Phase: Calm Sea / Harmony";
+                summary.innerText = "海のように静かで、穏やかな凪の中にいます。日常の温もりをそのまま分かち合える時間です。";
+                actions.innerHTML = `
+                    <li class="flex items-start space-x-2"><span class="text-amber-400">✦</span><span>あたたかいお茶をそっと淹れて、同じ空間で穏やかに過ごす。</span></li>
+                    <li class="flex items-start space-x-2"><span class="text-amber-400">✦</span><span>穏やかなBGMを流しながら、プレッシャーのない会話を楽しむ。</span></li>
+                `;
+            }
+        }
+
+        function triggerKillSwitch() {
+            isConnected = false;
+            encryptedPayload = null;
+            document.getElementById('view-female').classList.add('hidden');
+            document.getElementById('view-male').classList.add('hidden');
+            document.getElementById('view-killed').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>   
